@@ -1,0 +1,253 @@
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#define MAXIMUM_WORD_SIZE 40
+#define DICTIONARY_PATH "/Users/Leisffe/Desktop/C/jd/words.txt"
+#define INPUT_PATH "/Users/Leisffe/Desktop/C/jd/text.txt"
+
+typedef struct _Translation {
+    char from[MAXIMUM_WORD_SIZE];
+    char to[MAXIMUM_WORD_SIZE];
+} Translation;
+
+void fill_with_zeros(Translation *translation);
+void create_translation(Translation *target, char *from, char *to);
+
+
+void fill_with_zeros(Translation *translation) {
+    memset(translation->from, 0, MAXIMUM_WORD_SIZE);
+    memset(translation->to, 0, MAXIMUM_WORD_SIZE);
+}
+
+void create_translation(Translation *target, char *from, char *to){
+    strncpy(target->from, from, MAXIMUM_WORD_SIZE);
+    strncpy(target->to, to, MAXIMUM_WORD_SIZE);
+}
+
+//=====================================================================================//
+
+struct _List {
+    Translation translation;
+    struct _List *next;
+};
+
+typedef struct _List List;
+
+void init_list(List **list);
+void clear_list(List **list);
+
+void push_front(List **list, Translation *translation, bool *success);
+
+bool is_empty(List *list);
+
+
+void init_list(List ** list) {
+    if(!list) return;
+    *list = NULL;
+}
+
+void clear_list(List ** list) {
+    if (!list)
+        return;
+
+    List *current_element = *list;
+    List *next_element;
+
+    while (current_element) {
+        next_element = current_element->next;
+        free(current_element);
+        current_element = next_element;
+    }
+
+    *list = NULL;
+}
+
+void push_front(List ** list, Translation *translation, bool * success) {
+    if(!list || !translation) {
+        if(success) *success = false;
+        return;
+    }
+
+    List * new_element = (List *)malloc(sizeof (List));
+    if(!new_element) {
+        if(success) *success = false;
+        return;
+    }
+
+    new_element->translation = *translation;
+
+    if(is_empty(*list))
+        new_element->next = NULL;
+    else
+        new_element->next = *list;
+
+    *list = new_element;
+    if(success) *success = true;
+}
+
+bool is_empty(List * list) {
+    return list == NULL;
+}
+
+//=================================================================================//
+
+typedef struct _Dictionary {
+    List *list_of_translations;
+} Dictionary;
+
+bool load_dictionary(Dictionary *dictionary, char *filename);
+bool get_translation(Dictionary *dictionaty, char *word, char *repleacement);
+void free_dictionary(Dictionary *dictionary);
+
+bool check_word(Translation * translation, char * from) {
+    if(strcmp(translation->from, from) == 0)
+        return true;
+    return false;
+}
+
+bool get_translation(Dictionary * dictionary, char * word, char * repleacement) {
+    if(is_empty(dictionary->list_of_translations))
+        return false;
+
+    List* iterator = dictionary->list_of_translations;
+    while(iterator) {
+        if(check_word(&(iterator->translation), word)) {
+            memset(repleacement, 0, MAXIMUM_WORD_SIZE);
+            strncpy(repleacement, iterator->translation.to, MAXIMUM_WORD_SIZE);
+            return true;
+        }
+        iterator = iterator->next;
+    }
+
+    return false;
+}
+
+void free_dictionary(Dictionary * dictionary) {
+    clear_list(&(dictionary->list_of_translations));
+}
+
+bool add_translation(Dictionary * dictionary, char * word, char * translation) {
+    printf("adding translation from: %s \t to: %s\n", word, translation);
+
+    bool success;
+    Translation t;
+    create_translation(&t, word, translation);
+    push_front(&(dictionary->list_of_translations), &t, &success);
+    if(!success)
+        printf("The memory was full while adding new translation...\n");
+
+    return success;
+}
+
+bool load_dictionary(Dictionary * dictionary, char * filename) {
+    init_list(&(dictionary->list_of_translations));
+
+    FILE * file = fopen(filename, "r");
+    if(!file) {
+        printf("Couldn't open the file with translations!\n");
+        return false;
+    }
+
+    Translation t;
+    while(1) {
+        fscanf(file, "%s %s", t.from, t.to);
+
+        if(feof(file))
+            break;
+
+        if(!add_translation(dictionary, t.from, t.to))
+        {
+            fclose(file);
+            return false;
+        }
+    }
+
+    fclose(file);
+    return true;
+}
+
+//==============================================================================================//
+
+
+bool is_white_char(char c) {
+    return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
+}
+void copy_white_chars(FILE * input, FILE * output)
+{
+    while(1) {
+        int c = getc(input);
+
+        if(c == EOF)
+            return;
+
+        if(!is_white_char((char)c)) {
+            fseek(input, -2, 1);
+            return;
+        }
+
+        fputc(c, output);
+    }
+}
+
+
+int main()
+{
+    printf("Loading dictionary...\n");
+    Dictionary dictionary;
+    if(!load_dictionary(&dictionary, DICTIONARY_PATH)) {
+        free_dictionary(&dictionary);
+        return 0;
+    }
+
+    printf("opening input file...\n");
+    FILE * input = fopen(INPUT_PATH, "r");
+    if(!input) {
+        free_dictionary(&dictionary);
+        printf("Couldn't open the file with text to translate!\n");
+        return 0;
+    }
+
+    printf("Creating tmp output file...\n");
+    FILE * output = fopen("output_tmp.txt", "w");
+    if(!output) {
+        free_dictionary(&dictionary);
+        fclose(input);
+        printf("Couldn't open temporary file with translated text.\n");
+        return 0;
+    }
+
+    char word[MAXIMUM_WORD_SIZE];
+    char repleacement[MAXIMUM_WORD_SIZE];
+
+    printf("Starting translation...\n");
+    for(int i=0; ;++i) {
+        memset(word, '\0', MAXIMUM_WORD_SIZE);
+        memset(repleacement, '\0', MAXIMUM_WORD_SIZE);
+
+        fscanf(input, "%s", word);
+        if(feof(input))
+            break;
+
+        if(get_translation(&dictionary, word, repleacement)) {
+            printf("repleacing '%s' by '%s'\n", word, repleacement);
+            fprintf(output, "%s", repleacement);
+        } else {
+            fprintf(output, "%s", word);
+        }
+
+        copy_white_chars(input, output);
+    }
+
+    printf("closing files...\n");
+    free_dictionary(&dictionary);
+
+    remove(INPUT_PATH);
+    rename("output_tmp.txt", INPUT_PATH);
+
+    fclose(input);
+    fclose(output);
+}
