@@ -1,19 +1,19 @@
 # translator-cpp
 
-###1. Introduction
+### 1. Introduction
 
 This document contains report regarding the software created for programming assignment on laboratories of Fundamentals of Computer Programming. 
 
 The exact task that was given:
 Translator. Write a program that “translates” a text file by replacing words with corresponding words read from a separate dictionary. The dictionary should be read from a file once and later kept in memory.
 
-###2. Solution analysis
+### 2. Solution analysis
 
 Given program needs two input text files in order to work correctly. These are: input file with translation database and input file with words that are going to be translated.
 
 The program on its start checks whether the input files exists. If the result was positive the files are opened and words are read in the loop from given data base, otherwise a proper message is printed on the screen. Next, it checks for input file with text that is going to be translated and again shows proper message if one exists or not. If above steps were positive, program creates temporary file which will store the translations while the program is still working with replacing words from text source file using ones from input file with translations. After the loop is finished, the memory allocated to the dictionary structure is set free while the original text file is deleted and temporary file is renamed to match the name of file that was just deleted.
 
-###3. Internal specification
+### 3. Internal specification
 
 Function main() in a way given below:
 - Uses load_dictionary() function to load translations into structure
@@ -32,7 +32,7 @@ Main loop of the function works in a given way:
 5. At the end of the loop copy_white_chars() is used which copies all the white characters into the temporary file.
 6. Return to the step 1.
 
-###4. External specification
+### 4. External specification
 
 
 This program is designed to work with UNIX command line. It can be run normally either using system GUI or command line (while having the path set to the same exact folder as the file we are trying to run): ./NameOfFile
@@ -59,7 +59,7 @@ Every other word contained within text.txt file has to be in the next line, as i
 
 For correct input arguments the program will translate every input word and output translated ones instead of them. If there occurs any problem during that, error message will occur telling us what went wrong. 	
 
-###5. Testing the program
+### 5. Testing the program
 
 
 Working with correct input files
@@ -91,4 +91,4 @@ cukier
 woda
 
 
-#####The program works correctly. 
+##### The program works correctly. 
