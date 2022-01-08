@@ -1,4 +1,4 @@
-# translator-cpp
+# translator-c
 
 ### 1. Introduction
 
