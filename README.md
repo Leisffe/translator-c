@@ -1,4 +1,4 @@
-# translator-c
+# Translator
 
 ### 1. Introduction
 
